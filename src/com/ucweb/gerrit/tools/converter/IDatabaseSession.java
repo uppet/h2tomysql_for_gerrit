@@ -11,4 +11,6 @@ public interface IDatabaseSession {
 	ResultSet getTableContent(String tableName)  throws SQLException;
 	
 	void feedResultsToTable(ResultSet resultSet, String tableName)  throws SQLException;
+	
+	void fixIncrement() throws SQLException;
 }

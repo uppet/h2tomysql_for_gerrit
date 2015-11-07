@@ -29,16 +29,16 @@ public class GerritDatabaseConverter {
 				String dbPath = oldIni.get("database", "database");
 				dbPath = new File(new File(oldBaseDir), dbPath).toString();
 				h2Session = createH2DatabaseSession(dbPath);
-				h2Session.debugPrintTables();
+				//h2Session.debugPrintTables();
 			}
 			
-			if ("MYSQL".equals(newType)) {
+			if ("mysql".equals(newType.toLowerCase())) {
 				String dbName = newIni.get("database", "database");
 				String dbUser = newIni.get("database", "username");
 				String dbHost = newIni.get("database", "hostname");
 				String dbPass = newIni.get("database", "password");
 				mysqlSession = createMySQLDatabaseSession(dbName, dbUser, dbHost, dbPass);
-				mysqlSession.debugPrintTables();
+				//mysqlSession.debugPrintTables();
 			}
 		} catch (Throwable e) {
 			System.out.println("ERROR:Fail when loading gerrit config.");
@@ -72,10 +72,13 @@ public class GerritDatabaseConverter {
 				"system_config"
 		};
 		try {
+			System.out.println("Start tranfer database for Gerrit 2.9.1.");
 			for (int i = 0; i < dataTables.length; i++) {
 				ResultSet rs = h2Session.getTableContent(dataTables[i]);
 				mysqlSession.feedResultsToTable(rs, dataTables[i]);
 			}
+			mysqlSession.fixIncrement();
+			System.out.println("Done tranfer database data from H2 to MySQL.");
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}

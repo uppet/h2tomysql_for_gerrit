@@ -1,6 +1,5 @@
 package com.ucweb.gerrit.tools.converter;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -12,6 +11,7 @@ public class H2DatabaseSession implements IDatabaseSession {
 	static boolean sDbInited = false;
 	String dbPath;
 	Connection conn = null;
+	PreparedStatement stmt = null;
 
 	public H2DatabaseSession(String dbPath) throws Throwable {
 		super();
@@ -35,6 +35,7 @@ public class H2DatabaseSession implements IDatabaseSession {
 			while (tables.next()) {
 				System.out.println("table = " + tables.getString(3));
 			}
+			tables.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -43,8 +44,10 @@ public class H2DatabaseSession implements IDatabaseSession {
 
 	@Override
 	public ResultSet getTableContent(String tableName) throws SQLException {
+		cleanupResultStatment();
 		PreparedStatement stmt = conn.prepareStatement(String.format("select * from %s", tableName));
-		return stmt.executeQuery();
+		ResultSet rs = stmt.executeQuery();
+		return rs;
 	}
 
 	@Override
@@ -54,10 +57,27 @@ public class H2DatabaseSession implements IDatabaseSession {
 	}
 
 	@Override
+	public void fixIncrement() throws SQLException {
+		// Do noting
+	}
+
+	@Override
 	public void cleanup() {
+		cleanupResultStatment();
 		if (conn != null) {
 			try {
 				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private void cleanupResultStatment() {
+		if (stmt != null) {
+			try {
+				stmt.close();
+				stmt = null;
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
