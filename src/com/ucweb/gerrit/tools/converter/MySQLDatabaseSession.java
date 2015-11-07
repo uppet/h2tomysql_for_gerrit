@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 public class MySQLDatabaseSession implements IDatabaseSession {
 	static boolean sDbInited = false;
 	Connection conn = null;
+	private Object uuidOfAdmin;
 	
 	public MySQLDatabaseSession(String dbName, String dbUser, String dbHost,
 			String dbPass) throws Throwable {
@@ -51,6 +53,21 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 
 	@Override
 	public void feedResultsToTable(ResultSet resultSet, String tableName)  throws SQLException {
+		// get admin uuid
+		if (tableName.equals("account_groups")){
+			PreparedStatement uuid_stmt = conn
+					.prepareStatement("select group_uuid from account_groups where name='Administrators'");
+			ResultSet uuid_rs = uuid_stmt.executeQuery();
+			uuidOfAdmin = null;
+			if (uuid_rs.next()) {
+				uuidOfAdmin = uuid_rs.getObject(1);
+				System.out.println("Fount UUID of admin is "
+						+ uuidOfAdmin.toString());
+			}
+			uuid_rs.close();
+			uuid_stmt.close();
+		}
+		
 		// clear old data
 		if (!tableName.matches("[a-zA-Z_]*"))
 			return;
@@ -80,10 +97,10 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 	}
 
 	@Override
-	public void fixIncrement() throws SQLException {
+	public void fixIncrement() throws SQLException {		
 		// fix increments
 		Map<String, String[]> incrementGroupsActions = new HashMap<String,String[]>();
-		incrementGroupsActions.put("account_group_id", new String[] {"account_groups","max(group_id) + 1"});
+		//incrementGroupsActions.put("account_group_id", new String[] {"account_groups","max(group_id) + 1"});
 		incrementGroupsActions.put("account_id", new String [] { "accounts", "max(account_id) + 1" });
 		incrementGroupsActions.put("change_id", new String [] { "changes", "max(change_id) + 1" });
 		incrementGroupsActions.put("change_message_id", new String [] { "change_messages", "count(*) + 1" });
@@ -103,6 +120,25 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 		    action_stmt.execute();
 		    action_stmt.close();
 		}
+		
+		// special fix for account_group_id
+		System.out.println("Special fix for account_group_id");
+		Statement fix_action = conn.createStatement();
+		fix_action.execute("delete from account_group_id");
+		fix_action.execute("insert into account_group_id select group_id from account_group_names");
+		
+		System.out.println("Special fix for account_id");
+		fix_action.execute("delete from account_id");
+		fix_action.execute("insert into account_id select account_id from accounts");
+		
+		if (uuidOfAdmin != null) {
+			System.out.println("Special fix for uuid of admin");
+			fix_action
+					.execute(String
+							.format("update account_groups set group_uuid='%s', owner_group_uuid='%s' where name='Administrators'",
+									uuidOfAdmin, uuidOfAdmin));
+		}
+		fix_action.close();
 	}
 
 	@Override
