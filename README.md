@@ -4,6 +4,8 @@ We use pure java and jdbc to do data transfer, avoid the problem about encoding 
 
 "*ONLY TESTED WITH VERSION 2.9.1 GERRIT*"<br>
 
+The following instruction is only guideline.
+
 Inspired by original support I found:<br>
 https://github.com/scprek/gerrit-h2-mysql
 

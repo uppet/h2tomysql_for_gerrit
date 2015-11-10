@@ -86,12 +86,21 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 		String sql = String.format("insert into %s (%s) values (%s)", tableName.toLowerCase()
 				, StringUtils.join(cols, ","), Util.join(vals, ","));
 		PreparedStatement stmt = conn.prepareStatement(sql);
+		int batchCount = 0;
 		while (resultSet.next()) {
 			for (int i = 0; i < columnCount ; i++) {
 				stmt.setObject(i+1, resultSet.getObject(i+1));
 			}
-			stmt.execute();
+			batchCount++;
+			//stmt.execute();
+			stmt.addBatch();
+			
+			if (batchCount > 100) {
+				stmt.executeBatch();
+				batchCount = 0;
+			}
 		}
+		stmt.executeBatch();
 		stmt.close();
 		resultSet.close();
 	}
