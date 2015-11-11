@@ -78,7 +78,8 @@ public class GerritDatabaseConverter {
 				mysqlSession.feedResultsToTable(rs, dataTables[i]);
 			}
 			mysqlSession.fixIncrement();
-			System.out.println("Done tranfer database data from H2 to MySQL.");
+			System.out.println("  Done tranfer database data from H2 to MySQL.");
+			System.out.println("  REMEMBER to update `groups' file in meta/config tag of `All-Project' to make Administrator UUID correct.");
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}

@@ -26,7 +26,7 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 			Class.forName("com.mysql.jdbc.Driver");
 		}
 		conn = DriverManager.
-			    getConnection(String.format("jdbc:mysql://%s/%s?user=%s&password=%s", dbHost, dbName, dbUser, dbPass));
+			    getConnection(String.format("jdbc:mysql://%s/%s?user=%s&password=%s&useUnicode=true&characterEncoding=UTF-8", dbHost, dbName, dbUser, dbPass));
 	}
 
 	@Override
@@ -82,7 +82,7 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 			cols.add(resultSet.getMetaData().getColumnLabel(i+1).toLowerCase());
 			vals.add("?");
 		}
-		System.out.println("Feeding data into " + tableName.toLowerCase());
+		System.out.println("  Feeding data into " + tableName.toLowerCase());
 		String sql = String.format("insert into %s (%s) values (%s)", tableName.toLowerCase()
 				, StringUtils.join(cols, ","), Util.join(vals, ","));
 		PreparedStatement stmt = conn.prepareStatement(sql);
@@ -120,7 +120,7 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 		    PreparedStatement clear_action_stmt = conn.prepareStatement("delete from " + entry.getKey());
 		    clear_action_stmt.execute();
 			
-		    System.out.println("Fixing increment into " + entry.getKey());
+		    System.out.println(" Fixing increment into " + entry.getKey());
 		    PreparedStatement action_stmt = conn.prepareStatement(
 		    		String.format("insert into %s select %s from %s"
 		    				, entry.getKey()
@@ -131,21 +131,25 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 		}
 		
 		// special fix for account_group_id
-		System.out.println("Special fix for account_group_id");
+		System.out.println(" Special fix for account_group_id");
 		Statement fix_action = conn.createStatement();
 		fix_action.execute("delete from account_group_id");
 		fix_action.execute("insert into account_group_id select group_id from account_group_names");
 		
-		System.out.println("Special fix for account_id");
+		System.out.println(" Special fix for account_id");
 		fix_action.execute("delete from account_id");
 		fix_action.execute("insert into account_id select account_id from accounts");
 		
 		if (uuidOfAdmin != null) {
-			System.out.println("Special fix for uuid of admin");
+			System.out.println(" Special fix for uuid of admin");
 			fix_action
 					.execute(String
 							.format("update account_groups set group_uuid='%s', owner_group_uuid='%s' where name='Administrators'",
 									uuidOfAdmin, uuidOfAdmin));
+			fix_action
+				.execute(String
+						.format("update account_groups set owner_group_uuid='%s'",
+								uuidOfAdmin));
 		}
 		fix_action.close();
 	}
