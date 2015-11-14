@@ -26,7 +26,8 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 			Class.forName("com.mysql.jdbc.Driver");
 		}
 		conn = DriverManager.
-			    getConnection(String.format("jdbc:mysql://%s/%s?user=%s&password=%s&useUnicode=true&characterEncoding=UTF-8", dbHost, dbName, dbUser, dbPass));
+			    getConnection(String.format("jdbc:mysql://%s/%s?user=%s&password=%s&useUnicode=true&characterEncoding=UTF-8&jdbcCompliantTruncation=false"
+			        , dbHost, dbName, dbUser, dbPass));
 	}
 
 	@Override
@@ -89,6 +90,11 @@ public class MySQLDatabaseSession implements IDatabaseSession {
 		int batchCount = 0;
 		while (resultSet.next()) {
 			for (int i = 0; i < columnCount ; i++) {
+				Object o = resultSet.getObject(i+1);
+				if (o instanceof org.h2.jdbc.JdbcClob) {
+					if (((org.h2.jdbc.JdbcClob)o).length() > 65000)
+						System.out.println("Oh, a big h2 clob may being truncated.");
+				}
 				stmt.setObject(i+1, resultSet.getObject(i+1));
 			}
 			batchCount++;
